@@ -73,8 +73,7 @@ public class SignalProcessor implements Runnable{
                     }
                     case FSKMOD: {
                         byte[] data = readData();
-                        String srcStr = new String(data, 0, data.length, "UTF-8");
-                        double[] modRes = fskMod(stringToBin(srcStr));
+                        double[] modRes = fskMod(data);
                         sendData(FSKMOD_RESULT, DataTransformer.doubleToByte(modRes));
                         break;
                     }
@@ -82,7 +81,7 @@ public class SignalProcessor implements Runnable{
                         byte[] data = readData();
                         double[] doubleData = DataTransformer.byteToDouble(data);
                         byte[] demodData = fskDemod(doubleData);
-                        sendData(FSKDEMOD_RESULT, binToString(demodData).getBytes());
+                        sendData(FSKDEMOD_RESULT, demodData);
                         break;
                     }
                     case QUIT: {
@@ -111,6 +110,7 @@ public class SignalProcessor implements Runnable{
 
 
     String readCommand() throws IOException {
+        System.out.println("Reading command...");
         byte[] controlBytes = new byte[2048];
         int len;
         StringBuilder sb = new StringBuilder();
@@ -168,7 +168,11 @@ public class SignalProcessor implements Runnable{
         try{
             MWNumericArray dataArray = new MWNumericArray(data, MWClassID.DOUBLE);
             MWNumericArray result = (MWNumericArray) processor.fskdemod(1, dataArray)[0];
-            return result.getByteData();
+            int[] intRes = result.getIntData();
+            byte[] byteRes = new byte[intRes.length];
+            for(int i = 0; i < intRes.length; ++i)
+                byteRes[i] = (byte)intRes[i];
+            return byteRes;
         } catch (Exception e) {
             e.printStackTrace();
         }
