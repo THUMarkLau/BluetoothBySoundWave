@@ -8,10 +8,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Client {
+    /*
+     * Client 和 Server 的通信使用两个Socket，一个负责命令的传输，一个负责数据的传输
+     * 指令具体的内容可以使用 SignalProcessor 中的静态 String
+     * 传输的数据应该转换成 byte 数组之后再传输，DataTransformer 中提供了将 byte 数组
+     * 和 double 数组相互转换的静态方法
+     */
     public static void main(String[] args) throws IOException {
         String data = "This is a Test";
         int bufferSize = 2048;
 
+        // Socket 设置
         String host = "183.172.126.142";
         Socket controlSocket = new Socket(host, Server.controlPort);
         Socket dataSocket = new Socket(host, Server.dataPort);
