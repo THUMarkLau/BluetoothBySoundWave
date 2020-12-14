@@ -11,6 +11,8 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class SignalProcessor implements Runnable{
@@ -21,6 +23,7 @@ public class SignalProcessor implements Runnable{
     InputStream dataInStream;
     OutputStream dataOutStream;
     MatlabUtils processor;
+    int dataSize = -1;
 
     public static final String STRING_TO_BIN = "STRING_TO_BIN";
     public static final String BIN_TO_STRING = "BIN_TO_STRING";
@@ -53,8 +56,10 @@ public class SignalProcessor implements Runnable{
         String command;
         boolean quit = false;
         Thread curThread = Thread.currentThread();
+        byte[] demodData = null;
         try {
             while (!quit) {
+                Thread.sleep(100);
                 command = readCommand();
                 System.out.println(curThread.getName() + ": " + command);
                 switch (command) {
@@ -80,7 +85,7 @@ public class SignalProcessor implements Runnable{
                     case FSKDEMOD: {
                         byte[] data = readData();
                         double[] doubleData = DataTransformer.byteToDouble(data);
-                        byte[] demodData = fskDemod(doubleData);
+                        demodData = fskDemod(doubleData);
                         sendData(FSKDEMOD_RESULT, demodData);
                         break;
                     }
@@ -95,7 +100,10 @@ public class SignalProcessor implements Runnable{
                 }
             }
         } catch (Exception e) {
-                e.printStackTrace();
+            for(int i = 0; i < demodData.length; ++i)
+                System.out.print(demodData[i] + " ");
+            System.out.println();
+            e.printStackTrace();
         } finally {
             try {
                 controlInStream.close();
@@ -117,31 +125,33 @@ public class SignalProcessor implements Runnable{
         while ((len = controlInStream.read(controlBytes)) != -1) {
             // 读取传输指令
             sb.append(new String(controlBytes, 0, len, "UTF-8"));
-            if (len != 2048)
+            if (sb.charAt(sb.length() - 1) == '\n')
                 break;
         }
-        return sb.toString();
+        sb.setLength(sb.length() - 1);
+        Pattern p = Pattern.compile("([A-Z_]+)\\sdataSize:([0-9]+)");
+        Matcher m = p.matcher(sb.toString());
+        m.find();
+        dataSize = Integer.valueOf(m.group(2));
+        return m.group(1);
     }
 
     byte[] readData() throws IOException {
-        List<Byte> bytes = new ArrayList<>();
+        byte[] bytes = new byte[dataSize];
         byte[] dataBytes = new byte[2048];
         int len;
-        while((len = dataInStream.read(dataBytes)) != -1) {
+        int totalLen = 0;
+        while(totalLen < dataSize && (len = dataInStream.read(dataBytes)) != -1) {
             for(int i = 0; i < len; ++i)
-                bytes.add(dataBytes[i]);
-            if (len != 2048)
-                break;
+                bytes[totalLen + i] = dataBytes[i];
+            totalLen += len;
         }
-        byte[] result = new byte[bytes.size()];
-        for(int i = 0; i < bytes.size(); ++i)
-            result[i] = bytes.get(i);
-        return result;
+        return bytes;
     }
 
     boolean sendData(String cmd, byte[] data) {
         try {
-            controlOutStream.write(cmd.getBytes());
+            controlOutStream.write((cmd + " dataSize:" + data.length + "\n").getBytes());
             controlOutStream.flush();
             dataOutStream = dataSocket.getOutputStream();
             dataOutStream.write(data);
