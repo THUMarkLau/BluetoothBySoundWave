@@ -27,6 +27,7 @@ public class Server {
             while(true) {
                 SignalProcessor processor = waitForConnection();
                 if (processor != null) {
+                    System.out.println("Get connection");
                     new Thread(processor).start();
                 }
             }

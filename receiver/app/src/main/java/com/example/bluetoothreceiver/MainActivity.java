@@ -1,5 +1,6 @@
 package com.example.bluetoothreceiver;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
@@ -10,37 +11,29 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Bundle;
-import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.view.View;
 import android.widget.Toast;
 
-import com.dd.CircularProgressButton;
 import com.dd.processbutton.FlatButton;
 
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.Buffer;
-import java.util.Calendar;
-import java.util.Date;
 
 import cafe.adriel.androidaudiorecorder.AndroidAudioRecorder;
-import cafe.adriel.androidaudiorecorder.model.AudioChannel;
-import cafe.adriel.androidaudiorecorder.model.AudioSampleRate;
-import cafe.adriel.androidaudiorecorder.model.AudioSource;
 
 public class MainActivity extends AppCompatActivity {
 
     FlatButton beginRecordBtn;
     FlatButton stopRecordBtn;
+    FlatButton testBtn;
     boolean recording = false;
     String rawFilePath;
     String wavFilePath;
@@ -49,6 +42,9 @@ public class MainActivity extends AppCompatActivity {
     int channel = AudioFormat.CHANNEL_IN_STEREO;
     int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
     int bufferSize = 0;
+    Handler dataHandler;
+    Handler controlHandler;
+    InternetUtils internetUtils;
 
     private final int GET_RECODE_AUDIO = 1;
     private String[] PERMISSION_AUDIO = {
@@ -65,10 +61,71 @@ public class MainActivity extends AppCompatActivity {
         verifyAudioPermissions();
         beginRecordBtn = (FlatButton)findViewById(R.id.begin_record);
         stopRecordBtn = (FlatButton)findViewById(R.id.stop_record);
+        testBtn = (FlatButton)findViewById(R.id.test_btn);
         rawFilePath = this.getExternalFilesDir(null).getAbsolutePath() + "/raw.wav";
         wavFilePath = this.getExternalFilesDir(null).getAbsolutePath() + "/result.wav";
         final int color = getResources().getColor(R.color.colorPrimaryDark);
         final int requestCode = 0;
+        internetUtils = new InternetUtils();
+        internetUtils.setServerAddr("183.172.126.142");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                internetUtils.init();
+            }
+        }).start();
+
+
+        dataHandler = new Handler() {
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                super.handleMessage(msg);
+                switch (msg.what) {
+                    case InternetUtils.STRING_TO_BIN_RESULT: {
+                        byte[] bytes = (byte[]) msg.obj;
+                        System.out.println("The binary of \"Test\" is:");
+                        for(int i = 0; i < bytes.length; ++i)
+                            System.out.print(bytes[i] + " ");
+                        System.out.println();
+                        break;
+                    }
+                    case InternetUtils.BIN_TO_STRING_RESULT: {
+                        break;
+                    }
+                    case InternetUtils.FSK_MOD_RESULT: {
+                        break;
+                    }
+                    case InternetUtils.FSK_DEMOD_RESULT: {
+                        break;
+                    }
+                }
+            }
+        };
+
+        controlHandler = new Handler() {
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                super.handleMessage(msg);
+                switch (msg.what) {
+                    case InternetUtils.STRING_TO_BIN_RESULT: {
+                        System.out.println("Recieve cmd:" + (String)msg.obj);
+                        break;
+                    }
+                    case InternetUtils.BIN_TO_STRING_RESULT: {
+                        break;
+                    }
+                    case InternetUtils.FSK_MOD_RESULT: {
+                        break;
+                    }
+                    case InternetUtils.FSK_DEMOD_RESULT: {
+                        break;
+                    }
+                }
+            }
+        };
+
+        internetUtils.dataHandler = dataHandler;
+        internetUtils.controlHandler = controlHandler;
 
         beginRecordBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -95,8 +152,12 @@ public class MainActivity extends AppCompatActivity {
                 // TODO: 读取文件，分析结果
             }
         });
-
-
+        testBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                testMatlab();
+            }
+        });
     }
 
     public void verifyAudioPermissions() {
@@ -112,6 +173,35 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, PERMISSION_STORAGE,
                     3);
         }
+    }
+
+    public void testMatlab() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    internetUtils.sendCommand(InternetUtils.CMD_STRING_TO_BIN, "Test".getBytes().length);
+                    internetUtils.sendData("Test".getBytes());
+                    String cmd = internetUtils.readCommand();
+                    byte[] bytes = internetUtils.readData();
+
+                    Message controlMsg = new Message();
+                    controlMsg.what = internetUtils.STRING_TO_BIN_RESULT;
+                    controlMsg.obj = cmd;
+                    controlHandler.sendMessage(controlMsg);
+
+                    Message dataMsg = new Message();
+                    dataMsg.what = internetUtils.STRING_TO_BIN_RESULT;
+                    dataMsg.obj = bytes;
+                    dataHandler.sendMessage(dataMsg);
+
+                    internetUtils.sendCommand(InternetUtils.CMD_QUIT, 0);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 
     @Override

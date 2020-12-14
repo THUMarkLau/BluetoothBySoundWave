@@ -25,6 +25,12 @@
             app:pb_colorNormal="@color/blue_normal"
             app:pb_colorPressed="@color/blue_pressed"
             />
+        <com.dd.processbutton.FlatButton
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:id="@+id/test_btn"
+            android:text="Test"
+            android:textAllCaps="false"/>
     </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"
@@ -47,5 +53,6 @@
             android:visibility="invisible"
             />
     </LinearLayout>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
