@@ -4,3 +4,4 @@ server/out/
 **/.idea/
 **/local.properties
 **/app/build/
+server/cache/

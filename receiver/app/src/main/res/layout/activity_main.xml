@@ -7,9 +7,29 @@
     tools:context=".MainActivity">
 
     <LinearLayout
+        android:id="@+id/edit_text_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@id/begin_btn_layout"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.845"
+        tools:layout_editor_absoluteX="0dp">
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:gravity="center"
+            android:hint="Server Address"
+            android:id="@+id/server_addr"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:id="@+id/begin_btn_layout"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -26,14 +46,21 @@
             app:pb_colorPressed="@color/blue_pressed"
             />
         <com.dd.processbutton.FlatButton
-            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
-            android:id="@+id/test_btn"
-            android:text="Test"
-            android:textAllCaps="false"/>
+            android:layout_height="wrap_content"
+            android:text="Connnect"
+            android:textAllCaps="false"
+            android:id="@+id/connect_btn"/>
+        <com.dd.processbutton.FlatButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Parse"
+            android:id="@+id/parse_btn"
+            android:textAllCaps="false"
+            android:layout_marginVertical="10dp"/>
     </LinearLayout>
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         app:layout_constraintLeft_toLeftOf="parent"
