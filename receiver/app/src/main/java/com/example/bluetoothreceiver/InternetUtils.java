@@ -43,6 +43,8 @@ public class InternetUtils  {
     public static final String CMD_FSKDEMOD = "FSKDEMOD";
     public static final String CMD_FSKMOD_RESULT = "FSKMOD_RESULT";
     public static final String CMD_FSKDEMOD_RESULT = "FSKDEMOD_RESULT";
+    public static final String CMD_PARSE_WAV = "PARSE_WAV";
+    public static final String CMD_PARSE_WAV_RESULT = "PARSE_WAV_RESULT";
     public static final String CMD_QUIT = "QUIT";
 
     public void setServerAddr(String serverAddr) {

@@ -5,11 +5,11 @@ import com.mathworks.toolbox.javabuilder.MWCharArray;
 import com.mathworks.toolbox.javabuilder.MWClassID;
 import com.mathworks.toolbox.javabuilder.MWNumericArray;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,11 +29,14 @@ public class SignalProcessor implements Runnable{
     public static final String BIN_TO_STRING = "BIN_TO_STRING";
     public static final String STRING_TO_BIN_RESULT = "STRING_TO_BIN_RESULT";
     public static final String BIN_TO_STRING_RESULT = "BIN_TO_STRING_RESULT";
+    public static final String PARSE_WAV = "PARSE_WAV";
+    public static final String PARSE_WAV_RESULT = "PARSE_WAV_RESULT";
     public static final String FSKMOD = "FSKMOD";
     public static final String FSKDEMOD = "FSKDEMOD";
     public static final String FSKMOD_RESULT = "FSKMOD_RESULT";
     public static final String FSKDEMOD_RESULT = "FSKDEMOD_RESULT";
     public static final String QUIT = "QUIT";
+    static final String CACHE_DIR = "./cache/";
 
 
     public SignalProcessor(Socket control, Socket data) {
@@ -87,6 +90,14 @@ public class SignalProcessor implements Runnable{
                         double[] doubleData = DataTransformer.byteToDouble(data);
                         demodData = fskDemod(doubleData);
                         sendData(FSKDEMOD_RESULT, demodData);
+                        break;
+                    }
+                    case PARSE_WAV: {
+                        byte[] data = readData();
+                        String filename = writeWav(data);
+                        double[] wavContent = parseWav(filename);
+                        demodData = fskDemod(wavContent);
+                        sendData(PARSE_WAV_RESULT, demodData);
                         break;
                     }
                     case QUIT: {
@@ -163,6 +174,11 @@ public class SignalProcessor implements Runnable{
         return false;
     }
 
+    public void sendCommand(String cmd, int dataSize) throws IOException {
+        controlOutStream.write((cmd+" dataSize:" + dataSize +"\n").getBytes());
+        controlOutStream.flush();
+    }
+
     double[] fskMod(byte[] data) {
         try{
             MWNumericArray dataArray = new MWNumericArray(data, MWClassID.INT8);
@@ -207,6 +223,35 @@ public class SignalProcessor implements Runnable{
             MWCharArray charArray = (MWCharArray) result[0];
             return charArray.toString();
         } catch(Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    double[] parseWav(String filename) {
+        try {
+            Object[] tmp = processor.readWav(2, new MWCharArray(CACHE_DIR + filename));
+            MWNumericArray _wavData = (MWNumericArray) tmp[0];
+            double[] wavData = _wavData.getDoubleData();
+            return wavData;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    String writeWav(byte[] data) {
+        File cacheDir = new File(CACHE_DIR);
+        if (!cacheDir.exists()) {
+            cacheDir.mkdir();
+        }
+        try{
+            String curTime = String.valueOf(new Date().getTime());
+            String filename = curTime + "_record.wav";
+            FileOutputStream fileOutputStream = new FileOutputStream(CACHE_DIR + filename);
+            fileOutputStream.write(data);
+            return filename;
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;

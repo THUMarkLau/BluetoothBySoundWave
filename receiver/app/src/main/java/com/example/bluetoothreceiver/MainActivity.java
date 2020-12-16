@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.dd.processbutton.FlatButton;
@@ -33,11 +34,12 @@ public class MainActivity extends AppCompatActivity {
 
     FlatButton beginRecordBtn;
     FlatButton stopRecordBtn;
-    FlatButton testBtn;
+    FlatButton parseBtn;
+    FlatButton connectBtn;
+    EditText serverAddrEditText;
     boolean recording = false;
     String rawFilePath;
     String wavFilePath;
-    AndroidAudioRecorder recorder;
     int sampleRate = 48000;
     int channel = AudioFormat.CHANNEL_IN_STEREO;
     int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
@@ -61,19 +63,14 @@ public class MainActivity extends AppCompatActivity {
         verifyAudioPermissions();
         beginRecordBtn = (FlatButton)findViewById(R.id.begin_record);
         stopRecordBtn = (FlatButton)findViewById(R.id.stop_record);
-        testBtn = (FlatButton)findViewById(R.id.test_btn);
+        parseBtn = (FlatButton)findViewById(R.id.parse_btn);
+        connectBtn = (FlatButton)findViewById(R.id.connect_btn);
+        serverAddrEditText = (EditText)findViewById(R.id.server_addr);
         rawFilePath = this.getExternalFilesDir(null).getAbsolutePath() + "/raw.wav";
         wavFilePath = this.getExternalFilesDir(null).getAbsolutePath() + "/result.wav";
         final int color = getResources().getColor(R.color.colorPrimaryDark);
         final int requestCode = 0;
-        internetUtils = new InternetUtils();
-        internetUtils.setServerAddr("183.172.126.142");
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                internetUtils.init();
-            }
-        }).start();
+
 
 
         dataHandler = new Handler() {
@@ -124,8 +121,6 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        internetUtils.dataHandler = dataHandler;
-        internetUtils.controlHandler = controlHandler;
 
         beginRecordBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -152,10 +147,34 @@ public class MainActivity extends AppCompatActivity {
                 // TODO: 读取文件，分析结果
             }
         });
-        testBtn.setOnClickListener(new View.OnClickListener() {
+        connectBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                testMatlab();
+                final String serverAddr = serverAddrEditText.getText().toString();
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (internetUtils == null) {
+                            internetUtils = new InternetUtils();
+                            internetUtils.setServerAddr(serverAddr);
+                            internetUtils.init();
+                            internetUtils.dataHandler = dataHandler;
+                            internetUtils.controlHandler = controlHandler;
+                        }
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this, "Connect Successfully", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                }).start();
+            }
+        });
+        parseBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                runParse();
             }
         });
     }
@@ -175,27 +194,37 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void testMatlab() {
+    public void runParse() {
+        // 读取 wav 文件中的内容，发送到服务器中进行分析
+        final String serverAddr = serverAddrEditText.getText().toString();
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    internetUtils.sendCommand(InternetUtils.CMD_STRING_TO_BIN, "Test".getBytes().length);
-                    internetUtils.sendData("Test".getBytes());
+                    if (internetUtils == null) {
+                        
+                    }
+                    byte[] data = readData(wavFilePath);
+                    internetUtils.sendCommand(InternetUtils.CMD_PARSE_WAV, data.length);
+                    internetUtils.sendData(data);
                     String cmd = internetUtils.readCommand();
-                    byte[] bytes = internetUtils.readData();
-
-                    Message controlMsg = new Message();
-                    controlMsg.what = internetUtils.STRING_TO_BIN_RESULT;
-                    controlMsg.obj = cmd;
-                    controlHandler.sendMessage(controlMsg);
-
-                    Message dataMsg = new Message();
-                    dataMsg.what = internetUtils.STRING_TO_BIN_RESULT;
-                    dataMsg.obj = bytes;
-                    dataHandler.sendMessage(dataMsg);
+//                    internetUtils.sendCommand(InternetUtils.CMD_STRING_TO_BIN, "Test".getBytes().length);
+//                    internetUtils.sendData("Test".getBytes());
+//                    String cmd = internetUtils.readCommand();
+//                    byte[] bytes = internetUtils.readData();
+//
+//                    Message controlMsg = new Message();
+//                    controlMsg.what = internetUtils.STRING_TO_BIN_RESULT;
+//                    controlMsg.obj = cmd;
+//                    controlHandler.sendMessage(controlMsg);
+//
+//                    Message dataMsg = new Message();
+//                    dataMsg.what = internetUtils.STRING_TO_BIN_RESULT;
+//                    dataMsg.obj = bytes;
+//                    dataHandler.sendMessage(dataMsg);
 
                     internetUtils.sendCommand(InternetUtils.CMD_QUIT, 0);
+                    internetUtils = null;
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -207,6 +236,32 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    public byte[] readData(String filename) {
+        File file = new File(filename);
+        if (!file.exists()) {
+            return null;
+        }
+        byte[] buffer = new byte[4096];
+        byte[] result = null;
+        try {
+            FileInputStream fileInputStream = new FileInputStream(filename);
+            int len;
+            long dataSize = fileInputStream.getChannel().size();
+            int totalLen = 0;
+            result = new byte[(int) dataSize];
+            while ((len = fileInputStream.read(buffer)) != -1) {
+                for(int i = 0; i < len; ++i) {
+                    result[totalLen + i] = buffer[i];
+                }
+                totalLen += len;
+            }
+            return result;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public void startRecord(String name) {
