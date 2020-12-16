@@ -7,10 +7,7 @@ import com.mathworks.toolbox.javabuilder.MWNumericArray;
 
 import java.io.*;
 import java.net.Socket;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,6 +32,8 @@ public class SignalProcessor implements Runnable{
     public static final String FSKDEMOD = "FSKDEMOD";
     public static final String FSKMOD_RESULT = "FSKMOD_RESULT";
     public static final String FSKDEMOD_RESULT = "FSKDEMOD_RESULT";
+    public static final String MAKE_WAV = "MAKE_WAV";
+    public static final String MAKE_WAV_RESULT = "MAKE_WAV_RESULT";
     public static final String QUIT = "QUIT";
     static final String CACHE_DIR = "./cache/";
 
@@ -55,7 +54,6 @@ public class SignalProcessor implements Runnable{
 
     @Override
     public void run() {
-        byte[] dataBytes = new byte[2048];
         String command;
         boolean quit = false;
         Thread curThread = Thread.currentThread();
@@ -98,6 +96,12 @@ public class SignalProcessor implements Runnable{
                         double[] wavContent = parseWav(filename);
                         demodData = fskDemod(wavContent);
                         sendData(PARSE_WAV_RESULT, demodData);
+                        break;
+                    }
+                    case MAKE_WAV: {
+                        byte[] data = readData();
+                        byte[] wavData = makeWav(data);
+                        sendData(MAKE_WAV_RESULT, wavData);
                         break;
                     }
                     case QUIT: {
@@ -247,10 +251,32 @@ public class SignalProcessor implements Runnable{
         }
         try{
             String curTime = String.valueOf(new Date().getTime());
-            String filename = curTime + "_record.wav";
+            String filename = curTime + Thread.currentThread().getName() +"_record.wav";
             FileOutputStream fileOutputStream = new FileOutputStream(CACHE_DIR + filename);
             fileOutputStream.write(data);
             return filename;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    byte[] makeWav(byte[] data) {
+        try {
+            String curTime = String.valueOf(new Date().getTime());
+            String filename = curTime + Thread.currentThread().getName() + "_record.wav";
+            processor.makeWav(0, new MWCharArray(CACHE_DIR + filename), new MWNumericArray(DataTransformer.byteToDouble(data), MWClassID.DOUBLE));
+            FileInputStream fileInputStream = new FileInputStream(new File(CACHE_DIR + filename));
+            long size = fileInputStream.getChannel().size();
+            byte[] result = new byte[(int)size];
+            byte[] bytes = new byte[4096];
+            int len, totalLen = 0;
+            while((len = fileInputStream.read(bytes)) != -1) {
+                for(int i = 0; i < len; ++i)
+                    result[totalLen + i] = bytes[i];
+                totalLen += len;
+            }
+            return result;
         } catch (Exception e) {
             e.printStackTrace();
         }
