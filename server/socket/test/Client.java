@@ -31,7 +31,7 @@ public class Client {
         String data = "This is a Test";
 
         // Socket 设置
-        String host = "127.0.0.1";
+        String host = "183.172.121.147";
         Socket controlSocket = new Socket(host, Server.controlPort);
         Socket dataSocket = new Socket(host, Server.dataPort);
         controlOutStream = controlSocket.getOutputStream();
