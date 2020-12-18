@@ -29,6 +29,7 @@ public class InternetUtils  {
     public static final int STRING_TO_BIN_RESULT = 0x123;
     public static final int BIN_TO_STRING_RESULT = 0x124;
     public static final int FSK_MOD_RESULT = 0x125;
+    public static final int MAKE_WAV_RESULT = 0x127;
     public static final int FSK_DEMOD_RESULT = 0X126;
     public static final String CMD_STRING_TO_BIN = "STRING_TO_BIN";
     public static final String CMD_BIN_TO_STRING = "BIN_TO_STRING";
@@ -38,6 +39,7 @@ public class InternetUtils  {
     public static final String CMD_FSKDEMOD = "FSKDEMOD";
     public static final String CMD_FSKMOD_RESULT = "FSKMOD_RESULT";
     public static final String CMD_FSKDEMOD_RESULT = "FSKDEMOD_RESULT";
+    public static final String CMD_MAKE_WAV = "MAKE_WAV";
     public static final String CMD_QUIT = "QUIT";
 
     public void setServerAddr(String serverAddr) {

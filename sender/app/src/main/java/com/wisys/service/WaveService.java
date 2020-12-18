@@ -6,15 +6,25 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Binder;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.util.Log;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 
 import com.wisys.service.util.InternetUtils;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 public class WaveService extends Service {
 
@@ -24,6 +34,11 @@ public class WaveService extends Service {
 
     private final DataHandler dataHandler = new DataHandler(this);
     private final ControlHandler controlHandler = new ControlHandler(this);
+    private Handler msgHandler;
+
+    public void setMsgHandler(Handler msgHandler) {
+        this.msgHandler = msgHandler;
+    }
 
     static class DataHandler extends Handler {
         WeakReference<WaveService> weakReference;
@@ -56,6 +71,10 @@ public class WaveService extends Service {
                     //生成正弦波
                     audioTrack.play();
                     audioTrack.write(wave, 0, length, AudioTrack.WRITE_BLOCKING);
+                    break;
+                }
+                case InternetUtils.MAKE_WAV_RESULT: {
+                    weakReference.get().writeData((byte[]) msg.obj);
                     break;
                 }
                 case InternetUtils.FSK_DEMOD_RESULT: {
@@ -155,6 +174,26 @@ public class WaveService extends Service {
         return result;
     }
 
+    private void writeData(byte[] wavdata) {
+
+        String filepath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Music/test.wav";
+        File file = new File(filepath);
+        if (file.exists()) file.delete();
+        try {
+            FileOutputStream fos = new FileOutputStream(file);
+            fos.write(wavdata);
+            fos.close();
+        } catch (FileNotFoundException e) {
+            Log.e("AudioRecorder", Objects.requireNonNull(e.getMessage()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Message msg = Message.obtain();
+        msg.what = InternetUtils.MAKE_WAV_RESULT;
+        msg.obj = "录音文件存储在/Music/test.wav";
+        msgHandler.sendMessage(msg);
+    }
+
     public void getModData(byte[] data, InternetUtils internetUtils) {
         byte[] rlt = new byte[0];
         try {
@@ -169,6 +208,10 @@ public class WaveService extends Service {
 
             if (cmd.equals(InternetUtils.CMD_FSKMOD_RESULT)) rlt = internetUtils.readData();
 
+            internetUtils.sendCommand(InternetUtils.CMD_MAKE_WAV, rlt.length);
+            internetUtils.sendData(rlt);
+            cmd = internetUtils.readCommand();
+            byte[] wavdata = internetUtils.readData();
 
 //            Message controlMsg = new Message();
 //            controlMsg.what = InternetUtils.FSK_MOD_RESULT;
@@ -176,8 +219,8 @@ public class WaveService extends Service {
 //            internetUtils.controlHandler.sendMessage(controlMsg);
 
             Message dataMsg = new Message();
-            dataMsg.what = InternetUtils.FSK_MOD_RESULT;
-            dataMsg.obj = byteToDouble(rlt);
+            dataMsg.what = InternetUtils.MAKE_WAV_RESULT;
+            dataMsg.obj = wavdata;
             internetUtils.dataHandler.sendMessage(dataMsg);
 
             internetUtils.sendCommand(InternetUtils.CMD_QUIT, 0);

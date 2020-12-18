@@ -27,7 +27,7 @@
             </intent-filter>
         </activity>
 
-<!--        <service android:name=".MusicService" />-->
+        <service android:name=".MusicService" />
 <!--        <service android:name=".RecordService" />-->
         <service android:name=".WaveService" />
 

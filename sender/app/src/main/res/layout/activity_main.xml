@@ -35,13 +35,43 @@
         android:id="@+id/wave"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="40dp"
+        android:layout_marginBottom="20dp"
         android:onClick="startListener"
         android:text="发送"
         android:layout_marginTop="20dp"
         android:layout_marginEnd="20dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/choose"
         app:layout_constraintEnd_toEndOf="parent"/>
+
+    <TextView
+        android:id="@+id/botanchor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="40dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+        android:id="@+id/choose"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="40dp"
+        android:onClick="chooseWav"
+        android:text="选择文件"
+        android:layout_marginEnd="20dp"
+        app:layout_constraintEnd_toStartOf="@id/botanchor"
+        app:layout_constraintBaseline_toBaselineOf="@id/botanchor"/>
+
+    <Button
+        android:id="@+id/start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="startPlayer"
+        android:text="播放音频"
+        android:layout_marginStart="20dp"
+        app:layout_constraintStart_toEndOf="@id/botanchor"
+        app:layout_constraintBaseline_toBaselineOf="@id/botanchor" />
 
     <EditText
         android:hint="请输入服务器IP"
