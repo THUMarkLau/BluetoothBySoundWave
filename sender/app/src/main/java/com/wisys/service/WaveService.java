@@ -95,13 +95,18 @@ public class WaveService extends Service {
     }
 
     public void playSinWave() {
-        int waveLen = 44100 / 3000; // 8000Hz
-        int length = waveLen * 3000;
+        int waveLen = 44100 / 2000; // 8000Hz
+        int length = waveLen * 2000;
         audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 44100,
                 AudioFormat.CHANNEL_IN_STEREO, // CHANNEL_CONFIGURATION_MONO,
                 AudioFormat.ENCODING_PCM_8BIT, length, AudioTrack.MODE_STREAM);
         //生成正弦波
         byte[] wave = sin(waveLen, length);
+        try {
+            Thread.sleep(3100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         if (audioTrack != null) {
             audioTrack.play();
             audioTrack.write(wave, 0, length);

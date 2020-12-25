@@ -123,6 +123,11 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
 
+    public void writeText(String msg) {
+        TextView view = findViewById(R.id.gapview);
+        view.setText(msg);
+    }
+
     private void GetPermission() {
 
         /*在此处插入运行时权限获取的代码*/
