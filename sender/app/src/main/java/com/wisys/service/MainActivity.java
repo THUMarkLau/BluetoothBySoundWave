@@ -49,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
     boolean listenerStart = false;
     private WaveService waveService;
     private MusicService musicService;
+    private VolumeService volumeService;
     String serverAddr;
 
     private final ControlHandler controlHandler = new ControlHandler(this);
@@ -104,19 +105,38 @@ public class MainActivity extends AppCompatActivity {
         bindService(waveintent, waveconn, Service.BIND_AUTO_CREATE);
         Intent musicintent = new Intent(this, MusicService.class);
         bindService(musicintent, musicconn, Service.BIND_AUTO_CREATE);
+
+        volumeService = new VolumeService(this);
+    }
+
+    public void startListen(View view) {
+        volumeService.start();
+        volumeService.getNoiseLevel();
+        waveService.playSinWave();
+    }
+
+    public void stopListen(View view) {
+        volumeService.stop();
+    }
+
+    public void toastMsg(String msg) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
 
     private void GetPermission() {
 
         /*在此处插入运行时权限获取的代码*/
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) !=
                 PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+                        PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) !=
                         PackageManager.PERMISSION_GRANTED
         ) {
 
             ActivityCompat.requestPermissions(this,
-                    new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    new String[]{Manifest.permission.RECORD_AUDIO,
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE,
                             Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
         }
     }

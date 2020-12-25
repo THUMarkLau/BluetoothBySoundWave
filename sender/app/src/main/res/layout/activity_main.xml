@@ -73,6 +73,28 @@
         app:layout_constraintStart_toEndOf="@id/botanchor"
         app:layout_constraintBaseline_toBaselineOf="@id/botanchor" />
 
+    <Button
+        android:id="@+id/startlis"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="240dp"
+        android:onClick="startListen"
+        android:text="开始监听"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/botanchor" />
+
+    <Button
+        android:id="@+id/stoplis"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginBottom="240dp"
+        android:onClick="stopListen"
+        android:text="停止监听"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@id/botanchor" />
+
     <EditText
         android:hint="请输入服务器IP"
         android:id="@+id/addr"

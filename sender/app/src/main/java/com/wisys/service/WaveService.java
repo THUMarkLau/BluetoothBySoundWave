@@ -31,6 +31,7 @@ public class WaveService extends Service {
     AudioTrack audioTrack;
 
     private final WaveBinder mBinder = new WaveBinder();
+    public static final int SAMPLE_RATE_IN_HZ = 44100;
 
     private final DataHandler dataHandler = new DataHandler(this);
     private final ControlHandler controlHandler = new ControlHandler(this);
@@ -81,6 +82,29 @@ public class WaveService extends Service {
                     break;
                 }
             }
+        }
+    }
+
+    private static byte[] sin(int waveLen, int length) {
+        byte[] wave = new byte[length];
+        for (int i = 0; i < length; i++) {
+            wave[i] = (byte) (127 * (1 - Math.sin(2 * Math.PI
+                    * ((i % waveLen) * 1.00 / waveLen))));
+        }
+        return wave;
+    }
+
+    public void playSinWave() {
+        int waveLen = 44100 / 3000; // 8000Hz
+        int length = waveLen * 3000;
+        audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 44100,
+                AudioFormat.CHANNEL_IN_STEREO, // CHANNEL_CONFIGURATION_MONO,
+                AudioFormat.ENCODING_PCM_8BIT, length, AudioTrack.MODE_STREAM);
+        //生成正弦波
+        byte[] wave = sin(waveLen, length);
+        if (audioTrack != null) {
+            audioTrack.play();
+            audioTrack.write(wave, 0, length);
         }
     }
 
