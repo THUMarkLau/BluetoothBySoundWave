@@ -60,7 +60,6 @@ public class SignalProcessor implements Runnable{
         byte[] demodData = null;
         try {
             while (!quit) {
-                Thread.sleep(100);
                 command = readCommand();
                 System.out.println(curThread.getName() + ": " + command);
                 switch (command) {
@@ -115,9 +114,6 @@ public class SignalProcessor implements Runnable{
                 }
             }
         } catch (Exception e) {
-            for(int i = 0; i < demodData.length; ++i)
-                System.out.print(demodData[i] + " ");
-            System.out.println();
             e.printStackTrace();
         } finally {
             try {
@@ -185,7 +181,14 @@ public class SignalProcessor implements Runnable{
 
     double[] fskMod(byte[] data) {
         try{
-            MWNumericArray dataArray = new MWNumericArray(data, MWClassID.INT8);
+            int n = data.length;
+            byte[] newData = new byte[8 + data.length];
+            byte[] numByte = encodeNumber(n);
+            for(int i = 0; i < 8; ++i)
+                newData[i] = numByte[i];
+            for(int i = 0; i < data.length; ++i)
+                newData[8+i] = data[i];
+            MWNumericArray dataArray = new MWNumericArray(newData, MWClassID.INT8);
             MWNumericArray result = (MWNumericArray) processor.fskmod(1, dataArray)[0];
             return result.getDoubleData();
         } catch (Exception e) {
@@ -223,7 +226,11 @@ public class SignalProcessor implements Runnable{
 
     String binToString(byte[] srcData) {
         try{
-            Object[] result = processor.bin2string(1, srcData);
+            int cnt = srcData.length / 8;
+            byte[] nByte = new byte[cnt * 8];
+            for(int i = 0; i < cnt * 8; ++i)
+                nByte[i] = srcData[i];
+            Object[] result = processor.bin2string(1, new MWNumericArray(nByte, MWClassID.DOUBLE));
             MWCharArray charArray = (MWCharArray) result[0];
             return charArray.toString();
         } catch(Exception e) {
@@ -265,7 +272,7 @@ public class SignalProcessor implements Runnable{
         try {
             String curTime = String.valueOf(new Date().getTime());
             String filename = curTime + Thread.currentThread().getName() + "_record.wav";
-            processor.makeWav(0, new MWCharArray(CACHE_DIR + filename), new MWNumericArray(DataTransformer.byteToDouble(data), MWClassID.DOUBLE));
+            processor.makeWav( new MWCharArray(CACHE_DIR + filename), new MWNumericArray(DataTransformer.byteToDouble(data), MWClassID.DOUBLE));
             FileInputStream fileInputStream = new FileInputStream(new File(CACHE_DIR + filename));
             long size = fileInputStream.getChannel().size();
             byte[] result = new byte[(int)size];
@@ -281,5 +288,14 @@ public class SignalProcessor implements Runnable{
             e.printStackTrace();
         }
         return null;
+    }
+
+    byte[] encodeNumber(int n) {
+        byte[] res = new byte[8];
+        for(int i = 0; i < 8; i ++) {
+            res[i] = Byte.valueOf(String.valueOf(n / (1 << (7-i))));
+            n = n % (1<<(7-i));
+        }
+        return res;
     }
 }
