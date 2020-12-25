@@ -1,3 +1,7 @@
 server/.idea/
 server/out/
+**/.gradle/
+**/.idea/
+**/local.properties
+**/app/build/
 server/cache/
