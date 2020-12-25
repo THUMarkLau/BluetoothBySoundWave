@@ -10,7 +10,7 @@ import java.lang.ref.WeakReference;
 public class VolumeService {
 
     private static final String TAG = "AudioRecord";
-    static final int SAMPLE_RATE_IN_HZ = 8000;
+    static final int SAMPLE_RATE_IN_HZ = 44100;
     static final int BUFFER_SIZE = AudioRecord.getMinBufferSize(SAMPLE_RATE_IN_HZ,
             AudioFormat.CHANNEL_IN_DEFAULT, AudioFormat.ENCODING_PCM_16BIT);
     AudioRecord mAudioRecord;
@@ -77,6 +77,16 @@ public class VolumeService {
                                 if (buffer[i] >= 1e3) break;
                             startindex = totalSize + i;
                             threshold = startindex + 2 * SAMPLE_RATE_IN_HZ;
+                            if (null != activity) {
+                                final int finalStartindex = startindex;
+                                activity.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        activity.toastMsg("初始采样位置：" + finalStartindex);
+//                                activity.plateView.setValue(volume);
+                                    }
+                                });
+                            }
                         } else if (totalSize + BUFFER_SIZE >= threshold) {
                             int i;
                             for (i = 0; i < r; i++)
@@ -109,15 +119,15 @@ public class VolumeService {
                 mAudioRecord.stop();
                 mAudioRecord.release();
                 mAudioRecord = null;    // 仅仅release是不行的
-                if (null != activity) {
-                    activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-//                            activity.plateView.setmMaxValue(0);
-//                            activity.plateView.setValue(1);
-                        }
-                    });
-                }
+//                if (null != activity) {
+//                    activity.runOnUiThread(new Runnable() {
+//                        @Override
+//                        public void run() {
+////                            activity.plateView.setmMaxValue(0);
+////                            activity.plateView.setValue(1);
+//                        }
+//                    });
+//                }
             }
         }).start();
     }

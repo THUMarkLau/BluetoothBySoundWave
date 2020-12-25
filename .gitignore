@@ -4,4 +4,6 @@ server/out/
 **/.idea/
 **/local.properties
 **/app/build/
+**/app/release/
+**/build/
 server/cache/
