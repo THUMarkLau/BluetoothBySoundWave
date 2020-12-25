@@ -1,9 +1,6 @@
 package socket.test;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -31,7 +28,7 @@ public class Client {
         String data = "This is a Test";
 
         // Socket 设置
-        String host = "183.172.121.147";
+        String host = "183.172.124.61";
         Socket controlSocket = new Socket(host, Server.controlPort);
         Socket dataSocket = new Socket(host, Server.dataPort);
         controlOutStream = controlSocket.getOutputStream();
@@ -40,65 +37,29 @@ public class Client {
         dataInStream = dataSocket.getInputStream();
 
         // 发送指令，调用 STRING TO BIN 函数
-//        sendCommand(SignalProcessor.STRING_TO_BIN, data.getBytes().length);
-//        // 发送数据
-//        sendData(data.getBytes());
-//
-//        // 读取结果
-//        String resultCmd = readCommand();
-//        byte[] binStr = null;
-//        if (resultCmd.equals(SignalProcessor.STRING_TO_BIN_RESULT)) {
-//            binStr = readData();
-//            System.out.println("The binary result of \"" + data + "\" is");
-//            for(int i = 0; i < binStr.length; ++i) {
-//                System.out.print(binStr[i] + " ");
-//            }
-//            System.out.println();
-//        }
-//
-//        // 调制
-//        sendCommand(SignalProcessor.FSKMOD, binStr.length);
-//        sendData(binStr);
-//
-//        // 获取调制结果
-//        resultCmd = readCommand();
-//        double[] doubleData = null;
-//        if (resultCmd.equals(SignalProcessor.FSKMOD_RESULT)) {
-//            byte[] fskBin = readData();
-//            doubleData = DataTransformer.byteToDouble(fskBin);
-//            System.out.println("The fsk mod result is ");
-////            for(int i = 0; i < doubleData.length; ++i)
-////                System.out.print(doubleData[i] + " ");
-//            System.out.println();
-//        }
-//        Thread.sleep(500);
-//        // 解调制
-//        sendCommand(SignalProcessor.FSKDEMOD, DataTransformer.doubleToByte(doubleData).length);
-//        sendData(DataTransformer.doubleToByte(doubleData));
-//
-//        // 获取解调制结果
-//        resultCmd = readCommand();
-//        byte[] fskDemodBin = null;
-//        // fskdemod = true;
-//        if (resultCmd.equals(SignalProcessor.FSKDEMOD_RESULT)) {
-//            fskDemodBin = readData();
-//            System.out.println("FSK demodulation result is:");
-//            for(int i = 0; i < fskDemodBin.length; ++i)
-//                System.out.print(fskDemodBin[i] + " ");
-//            System.out.println();
-//        }
-//        fskdemod = false;
-//
-//        // 还原
-//        sendCommand(SignalProcessor.BIN_TO_STRING, fskDemodBin.length);
-//        sendData(fskDemodBin);
-//        // 读取结果
-//        resultCmd = readCommand();
-//        byte[] strByte = readData();
-//        String resStr = new String(strByte, 0, strByte.length, "UTF-8");
-//        System.out.println("The recovering result is \"" + resStr + "\"");
-//        sendCommand(SignalProcessor.QUIT, 0);
-//        Thread.sleep(200);
+        sendCommand(SignalProcessor.STRING_TO_BIN, data.getBytes().length);
+        sendData(data.getBytes());
+
+        String cmd = readCommand();
+        byte[] binStr = readData();
+
+        sendCommand(SignalProcessor.FSKMOD, binStr.length);
+        sendData(binStr);
+
+        cmd = readCommand();
+        byte[] fskData = readData();
+
+        sendCommand(SignalProcessor.MAKE_WAV, fskData.length);
+        sendData(fskData);
+
+        cmd = readCommand();
+        byte[] __ = readData();
+
+        sendCommand(SignalProcessor.QUIT, 0);
+        Thread.sleep(1000);
+        controlOutStream.close();
+        controlInStream.close();
+
     }
 
     static String readCommand() throws IOException {
