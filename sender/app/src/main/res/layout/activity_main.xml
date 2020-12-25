@@ -6,6 +6,30 @@
     android:layout_height="match_parent"
     tools:context="com.wisys.service.MainActivity">
 
+    <RadioGroup
+        android:id="@+id/selectserv"
+        android:orientation="horizontal"
+        android:layout_height="40dp"
+        android:layout_width="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/gapview"
+        android:layout_marginTop="40dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent">
+        <RadioButton
+            android:id="@+id/sender"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="发送端"
+            android:textSize="12pt"
+            android:checked="true"/>
+        <RadioButton
+            android:id="@+id/receiver"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="响应端"
+            android:textSize="12pt"/>
+    </RadioGroup>
+
     <EditText
         android:id="@+id/freq"
         android:layout_height="wrap_content"

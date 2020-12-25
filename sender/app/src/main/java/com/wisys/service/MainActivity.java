@@ -31,6 +31,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -51,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private MusicService musicService;
     private VolumeService volumeService;
     String serverAddr;
+    boolean sender;
 
     private final ControlHandler controlHandler = new ControlHandler(this);
 
@@ -112,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
     public void startListen(View view) {
         volumeService.start();
         volumeService.getNoiseLevel();
-        waveService.playSinWave();
+        waveService.playSinWave(sender);
     }
 
     public void stopListen(View view) {
@@ -148,6 +151,12 @@ public class MainActivity extends AppCompatActivity {
 
     public void setServerAddr(View view) {
         this.serverAddr = ((EditText) findViewById(R.id.addr)).getText().toString();
+        RadioGroup mode = findViewById(R.id.selectserv);
+        RadioButton btn = findViewById(mode.getCheckedRadioButtonId());
+        this.sender = btn.getText().toString().equals("发送端");
+        int port = 50002 + (this.sender ? 0 : 1);
+        volumeService.setServerAddr(serverAddr);
+        volumeService.setPort(port);
     }
 
     public void startListener(View view) {

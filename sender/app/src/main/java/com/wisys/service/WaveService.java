@@ -21,7 +21,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.ref.WeakReference;
+import java.net.Socket;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -94,16 +97,16 @@ public class WaveService extends Service {
         return wave;
     }
 
-    public void playSinWave() {
-        int waveLen = 44100 / 2000; // 8000Hz
+    public void playSinWave(boolean sender) {
+        int waveLen = SAMPLE_RATE_IN_HZ / 2000; // 2000Hz
         int length = waveLen * 2000;
-        audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 44100,
+        audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, SAMPLE_RATE_IN_HZ,
                 AudioFormat.CHANNEL_IN_STEREO, // CHANNEL_CONFIGURATION_MONO,
                 AudioFormat.ENCODING_PCM_8BIT, length, AudioTrack.MODE_STREAM);
         //生成正弦波
         byte[] wave = sin(waveLen, length);
         try {
-            Thread.sleep(3100);
+            Thread.sleep(sender ? 800 : 3100);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -126,7 +129,7 @@ public class WaveService extends Service {
             super.handleMessage(msg);
             switch (msg.what) {
                 case InternetUtils.STRING_TO_BIN_RESULT: {
-                    System.out.println("Recieve cmd:" + (String) msg.obj);
+                    System.out.println("Recieve cmd:" + msg.obj);
                     break;
                 }
                 case InternetUtils.BIN_TO_STRING_RESULT: {
@@ -189,19 +192,6 @@ public class WaveService extends Service {
         new SignalProcessor(input, serverAddr).start();
     }
 
-    public static float[] byteToDouble(byte[] data) {
-        if (data == null)
-            return null;
-        float[] result = new float[data.length / 8];
-        for (int i = 0; i < data.length / 8; ++i) {
-            long value = 0;
-            for (int j = 0; j < 8; ++j) {
-                value |= ((long) (data[i * 8 + j] & 0xff)) << (8 * j);
-            }
-            result[i] = (float) Double.longBitsToDouble(value);
-        }
-        return result;
-    }
 
     private void writeData(byte[] wavdata) {
 
@@ -241,11 +231,6 @@ public class WaveService extends Service {
             internetUtils.sendData(rlt);
             cmd = internetUtils.readCommand();
             byte[] wavdata = internetUtils.readData();
-
-//            Message controlMsg = new Message();
-//            controlMsg.what = InternetUtils.FSK_MOD_RESULT;
-//            controlMsg.obj = cmd;
-//            internetUtils.controlHandler.sendMessage(controlMsg);
 
             Message dataMsg = new Message();
             dataMsg.what = InternetUtils.MAKE_WAV_RESULT;

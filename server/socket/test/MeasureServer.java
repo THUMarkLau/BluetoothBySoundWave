@@ -30,24 +30,19 @@ public class MeasureServer {
             int r = is.read(buffer);
             if (r > -1) {
                 bytes_1 = new byte[r];
-                for(int i = 0; i < r; i++)
-                    bytes_1[i] = buffer[i];
+                System.arraycopy(buffer, 0, bytes_1, 0, r);
             }
-            long ts_1 = Long.valueOf(new String(bytes_1, 0, bytes_1.length));
+            double ts_1 = Double.parseDouble(new String(bytes_1, 0, bytes_1.length));
 
             is = socket_2.getInputStream();
             r = is.read(buffer);
             if (r > -1) {
                 bytes_2 = new byte[r];
-                for(int i = 0; i < r; i++)
-                    bytes_2[i] = buffer[i];
+                System.arraycopy(buffer, 0, bytes_2, 0, r);
             }
-            long ts_2 = Long.valueOf(new String(bytes_2, 0, bytes_2.length));
+            double ts_2 = Double.parseDouble(new String(bytes_2, 0, bytes_2.length));
 
-            long bigTs = ts_1 > ts_2 ? ts_1 : ts_2;
-            long smallTs = ts_1 < ts_2 ? ts_1 : ts_2;
-
-            double distance = (bigTs - smallTs) / 2 * 340;
+            double distance = Math.abs(ts_1 - ts_2) / 2.d * 340;
 
             Random _r = new Random();
             double rd = _r.nextGaussian() % 4.8 + 0.2;

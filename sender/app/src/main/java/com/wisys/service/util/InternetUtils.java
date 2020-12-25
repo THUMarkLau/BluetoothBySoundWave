@@ -12,8 +12,6 @@ import java.util.regex.Pattern;
 
 public class InternetUtils  {
     public String serverAddr;
-    public int controlPort = 50000;
-    public int dataPort = 50001;
     private Socket controlSocket;
     private Socket dataSocket;
     // Socket 对应的输入流
@@ -46,7 +44,7 @@ public class InternetUtils  {
         this.serverAddr = serverAddr;
     }
 
-    public void init() {
+    public void init(int controlPort, int dataPort) {
         if (serverAddr == null) {
             // 如果没有设置好服务器地址或端口，退出
             return;
@@ -61,6 +59,10 @@ public class InternetUtils  {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void init() {
+        init(50000, 50001);
     }
 
     public String readCommand() throws IOException {
