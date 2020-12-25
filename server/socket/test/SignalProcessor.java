@@ -291,10 +291,10 @@ public class SignalProcessor implements Runnable{
     }
 
     byte[] encodeNumber(int n) {
-        byte[] res = new byte[8];
-        for(int i = 0; i < 8; i ++) {
-            res[i] = Byte.valueOf(String.valueOf(n / (1 << (7-i))));
-            n = n % (1<<(7-i));
+        byte[] res = new byte[16];
+        for(int i = 0; i < 16; i ++) {
+            res[i] = Byte.valueOf(String.valueOf(n / (1 << (15-i))));
+            n = n % (1<<(15-i));
         }
         return res;
     }
