@@ -15,6 +15,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.dd.processbutton.FlatButton;
@@ -36,17 +37,24 @@ public class MainActivity extends AppCompatActivity {
     FlatButton stopRecordBtn;
     FlatButton parseBtn;
     FlatButton connectBtn;
+    FlatButton lstBtn;
     EditText serverAddrEditText;
+    TextView resultTv;
     boolean recording = false;
     String rawFilePath;
     String wavFilePath;
+    String txtFilePath;
     int sampleRate = 48000;
-    int channel = AudioFormat.CHANNEL_IN_STEREO;
+    int channel = AudioFormat.CHANNEL_IN_MONO;
     int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
     int bufferSize = 0;
     Handler dataHandler;
     Handler controlHandler;
     InternetUtils internetUtils;
+    Listener listener;
+    Player player;
+
+    static final int SHOW_RESULT = 0X123;
 
     private final int GET_RECODE_AUDIO = 1;
     private String[] PERMISSION_AUDIO = {
@@ -66,35 +74,21 @@ public class MainActivity extends AppCompatActivity {
         parseBtn = (FlatButton)findViewById(R.id.parse_btn);
         connectBtn = (FlatButton)findViewById(R.id.connect_btn);
         serverAddrEditText = (EditText)findViewById(R.id.server_addr);
+        lstBtn = (FlatButton)findViewById(R.id.lst_btn);
+        resultTv = (TextView)findViewById(R.id.result);
         rawFilePath = this.getExternalFilesDir(null).getAbsolutePath() + "/raw.wav";
         wavFilePath = this.getExternalFilesDir(null).getAbsolutePath() + "/result.wav";
-        final int color = getResources().getColor(R.color.colorPrimaryDark);
-        final int requestCode = 0;
-
-
+        txtFilePath = this.getExternalFilesDir(null).getAbsolutePath() + "/res.txt";
+        listener = new Listener(this);
+        player = new Player(this);
 
         dataHandler = new Handler() {
             @Override
             public void handleMessage(@NonNull Message msg) {
                 super.handleMessage(msg);
-                switch (msg.what) {
-                    case InternetUtils.STRING_TO_BIN_RESULT: {
-                        byte[] bytes = (byte[]) msg.obj;
-                        System.out.println("The binary of \"Test\" is:");
-                        for(int i = 0; i < bytes.length; ++i)
-                            System.out.print(bytes[i] + " ");
-                        System.out.println();
-                        break;
-                    }
-                    case InternetUtils.BIN_TO_STRING_RESULT: {
-                        break;
-                    }
-                    case InternetUtils.FSK_MOD_RESULT: {
-                        break;
-                    }
-                    case InternetUtils.FSK_DEMOD_RESULT: {
-                        break;
-                    }
+                if (msg.what == SHOW_RESULT) {
+                    String str = (String)msg.obj;
+                    resultTv.setText(str);
                 }
             }
         };
@@ -126,6 +120,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 beginRecordBtn.setVisibility(View.INVISIBLE);
+                parseBtn.setVisibility(View.INVISIBLE);
+                connectBtn.setVisibility(View.INVISIBLE);
                 stopRecordBtn.setVisibility(View.VISIBLE);
                 Thread thread = new Thread(new Runnable() {
                     @Override
@@ -144,6 +140,8 @@ public class MainActivity extends AppCompatActivity {
                 recording = false;
                 stopRecordBtn.setVisibility(View.INVISIBLE);
                 beginRecordBtn.setVisibility(View.VISIBLE);
+                parseBtn.setVisibility(View.VISIBLE);
+                connectBtn.setVisibility(View.VISIBLE);
                 // TODO: 读取文件，分析结果
             }
         });
@@ -177,6 +175,12 @@ public class MainActivity extends AppCompatActivity {
                 runParse();
             }
         });
+        lstBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startListen();
+            }
+        });
     }
 
     public void verifyAudioPermissions() {
@@ -196,32 +200,30 @@ public class MainActivity extends AppCompatActivity {
 
     public void runParse() {
         // 读取 wav 文件中的内容，发送到服务器中进行分析
-        final String serverAddr = serverAddrEditText.getText().toString();
+        // final String serverAddr = serverAddrEditText.getText().toString();
+        final String serverAddr = "183.172.121.15";
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     if (internetUtils == null) {
-                        
+                        return;
                     }
                     byte[] data = readData(wavFilePath);
                     internetUtils.sendCommand(InternetUtils.CMD_PARSE_WAV, data.length);
                     internetUtils.sendData(data);
                     String cmd = internetUtils.readCommand();
-//                    internetUtils.sendCommand(InternetUtils.CMD_STRING_TO_BIN, "Test".getBytes().length);
-//                    internetUtils.sendData("Test".getBytes());
-//                    String cmd = internetUtils.readCommand();
-//                    byte[] bytes = internetUtils.readData();
-//
-//                    Message controlMsg = new Message();
-//                    controlMsg.what = internetUtils.STRING_TO_BIN_RESULT;
-//                    controlMsg.obj = cmd;
-//                    controlHandler.sendMessage(controlMsg);
-//
-//                    Message dataMsg = new Message();
-//                    dataMsg.what = internetUtils.STRING_TO_BIN_RESULT;
-//                    dataMsg.obj = bytes;
-//                    dataHandler.sendMessage(dataMsg);
+                    byte[] demodData = internetUtils.readData();
+                    internetUtils.sendCommand(InternetUtils.CMD_BIN_TO_STRING, demodData.length);
+                    internetUtils.sendData(demodData);
+                    cmd = internetUtils.readCommand();
+                    byte[] strData = internetUtils.readData();
+                    String str = new String(strData, 0, strData.length, "UTF-8");
+
+                    Message dataMsg = new Message();
+                    dataMsg.what = SHOW_RESULT;
+                    dataMsg.obj = str;
+                    dataHandler.sendMessage(dataMsg);
 
                     internetUtils.sendCommand(InternetUtils.CMD_QUIT, 0);
                     internetUtils = null;
@@ -304,7 +306,7 @@ public class MainActivity extends AppCompatActivity {
         //wav文件比原始数据文件多出了44个字节，除去表头和文件大小的8个字节剩余文件长度比原始数据多36个字节
         long totalDataLen = totalAudioLen + 36;
         long longSampleRate = sampleRate;
-        int channels = 2;
+        int channels = 1;
         //每分钟录到的数据的字节数
         long byteRate = 16 * sampleRate * channels / 8;
 
@@ -390,5 +392,27 @@ public class MainActivity extends AppCompatActivity {
         header[43] = (byte) ((totalAudioLen >> 24) & 0xff);
         //把header写入wav文件
         out.write(header, 0, 44);
+    }
+
+    public void showMsg(String msg) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+    }
+
+    public void startListen() {
+        listener.start();
+    }
+
+    public void play() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(1000 * 3);
+                    player.play();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 }
